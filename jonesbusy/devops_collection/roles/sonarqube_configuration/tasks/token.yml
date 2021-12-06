@@ -1,0 +1,40 @@
+---
+- name: List user token
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/user_tokens/search?login={{ login | urlencode() }}"
+    status_code: [200]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+    return_content: yes
+  changed_when: false
+  register: user_tokens
+
+- name: Provision user token
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/user_tokens/generate?login={{ login | urlencode() }}&name={{ token.name | urlencode() }}"
+    status_code: [200, 400]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+    return_content: yes
+  changed_when: provision_token.status == 200
+  register: provision_token
+  when: not token.revoked
+
+- name: Revoke user token
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/user_tokens/revoke?login={{ login | urlencode() }}&name={{ token.name | urlencode() }}"
+    status_code: [204, 400]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+    return_content: yes
+  changed_when: provision_token.status == 200
+  register: provision_token

@@ -2,6 +2,10 @@ galaxy_info:
   author: Valentin Delaye (jonesbusy@gmail.com)
   description: Perform Jenkins server configuration
   license: Unlicense
-  min_ansible_version: 2.11
+  min_ansible_version: 2.12
   galaxy_tags: ["jenkins"]
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
 dependencies: []

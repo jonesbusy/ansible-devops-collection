@@ -1,0 +1,40 @@
+---
+- name: Setup global single properties
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/settings/set?key={{ prop.key }}&value={{ prop.value | urlencode() }}"
+    status_code: 204
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  loop: "{{ sonarqube_configuration_default_global_single_properties + sonarqube_configuration_global_single_properties }}"
+  loop_control:
+    loop_var: prop
+
+- name: Setup global multi properties
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/settings/set?key={{ prop.key }}&values={{ prop.value | join('&values=') }}"
+    status_code: 204
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  loop: "{{ sonarqube_configuration_default_global_multi_properties + sonarqube_configuration_global_multi_properties }}"
+  loop_control:
+    loop_var: prop
+
+- name: Reset global properties
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/settings/reset?keys={{ prop.key }}"
+    status_code: 204
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  loop: "{{ sonarqube_configuration_default_global_single_properties + sonarqube_configuration_default_global_multi_properties }}"
+  loop_control:
+    loop_var: prop
+  when: prop.reset is defined and prop.reset

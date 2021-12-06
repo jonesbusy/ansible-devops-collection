@@ -1,0 +1,6 @@
+---
+- name: Quality gate tasks
+  ansible.builtin.include_tasks: tasks/quality_gate.yml
+  loop: "{{ sonarqube_configuration_quality_gates }}"
+  loop_control:
+    loop_var: quality_gate

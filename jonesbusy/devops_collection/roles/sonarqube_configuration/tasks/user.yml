@@ -1,0 +1,59 @@
+---
+- name: Create local user
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/users/create?email={{ user.email | urlencode() }}&local={{ user.local | lower() }}&login={{ user.login }}&name={{ user.name | urlencode() }}&password={{ user.password | default('') | urlencode() }}"
+    status_code: [200, 400]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: create_user_output.status == 200
+  when: not user.deleted and user.local
+  register: create_user_output
+
+- name: Provsision external user
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/users/create?email={{ user.email | urlencode() }}&local={{ user.local | lower() }}&login={{ user.login }}&name={{ user.name | urlencode() }}"
+    status_code: [200, 400]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: create_user_output.status == 200
+  when: not user.deleted and not user.local
+  register: create_user_output
+
+- name: Delete user
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/users/deactivate?login={{ user.login }}"
+    status_code: [200, 404]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: user.deleted
+  register: delete_user_output
+
+# Assign or remove groups
+- name: User group tasks
+  ansible.builtin.include_tasks: tasks/user_group.yml
+  loop: "{{ user.groups }}"
+  loop_control:
+    loop_var: group
+  vars:
+    login: "{{ user.login }}"
+  when: not user.deleted and user.groups is defined
+
+# Ensure tokens are presents and generate them if needed
+- name: Token tasks
+  ansible.builtin.include_tasks: tasks/token.yml
+  loop: "{{ user.tokens }}"
+  loop_control:
+    loop_var: token
+  vars:
+    login: "{{ user.login }}"
+  when: not user.deleted and user.tokens is defined

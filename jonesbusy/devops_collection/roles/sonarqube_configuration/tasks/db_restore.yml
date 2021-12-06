@@ -1,0 +1,34 @@
+---
+- name: Restore database block
+  block:
+
+  - name: Ensure backup file exist
+    ansible.builtin.stat:
+      path: "{{ sonarqube_backup_location }}/{{ sonarqube_backup_to_restore }}.tar"
+    register: backup_exists
+
+  - name: Assert backup exists
+    ansible.builtin.assert:
+      that:
+        - backup_exists.stat.exists
+
+  # Perform db backup just in case
+  - name: Include db backup tasks
+    ansible.builtin.include_tasks: tasks/db_backup.yml
+
+  - name: Restore database
+    community.postgresql.postgresql_db:
+      login_host: "{{ sonarqube_configuration_external_db_host }}"
+      port: "{{ sonarqube_configuration_external_db_port }}"
+      db: "{{ sonarqube_configuration_db_name }}"
+      login_user: "{{ sonarqube_configuration_db_login }}"
+      login_password: "{{ sonarqube_configuration_db_password }}"
+      state: restore
+      target: "{{ sonarqube_configuration_sonarqube_backup_location }}/{{ sonarqube_configuration_sonarqube_backup_to_restore }}.tar"
+      target_opts: "--clean -F tar"
+
+  when:
+    - sonarqube_configuration_external_db_host is defined
+    - sonarqube_configuration_external_db_port is defined
+    - sonarqube_configuration_db_login is defined
+    - sonarqube_configuration_db_password is defined

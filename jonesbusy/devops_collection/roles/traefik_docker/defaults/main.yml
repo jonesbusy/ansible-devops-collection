@@ -1,0 +1,22 @@
+---
+# Version
+traefik_docker_traefik_version: v2.5.4
+
+# Misc
+traefik_docker_traefik_log_level: ERROR
+traefik_docker_environment_scheme: https
+
+# Certificates
+traefik_docker_ca_certificates: []
+
+# Traefik dashboard password
+traefik_docker_traefik_dashboard_password: "$2y$10$xrfR.a8tRZ2kuflKyJPTpuPnmdC6ODCWAGchYKTJ9G82DB4jnmiGm"
+
+# Ports
+traefik_docker_http_port: 80
+traefik_docker_external_http_port: 80
+traefik_docker_https_port: 443
+traefik_docker_external_https_port: 443
+
+# Traefik docker template folder
+traefik_docker_templates_folder: "/home/{{ ansible_user }}/docker-traefik"

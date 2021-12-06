@@ -2,6 +2,10 @@ galaxy_info:
   author: Valentin Delaye (jonesbusy@gmail.com)
   description: Perform Sonarqube server configuration using REST API
   license: Unlicense
-  min_ansible_version: 2.11
+  min_ansible_version: 2.12
   galaxy_tags: ["sonarqube"]
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
 dependencies: []

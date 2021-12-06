@@ -1,0 +1,59 @@
+---
+- name: Create conditions for quality gate {{ quality_gate_name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualitygates/create_condition"
+    body: "gateName={{ quality_gate_name }}&metric={{ condition.metric | urlencode() }}&op={{ condition.op | urlencode() }}&error={{ condition.error | urlencode() }}"
+    status_code: [200, 400]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: create_condition_output.status == 200
+  when: not (condition.deleted | default(false))
+  register: create_condition_output
+
+- name: Retrieve conditions for quality gate {{ quality_gate_name }}
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualitygates/show?name={{ quality_gate_name | urlencode() }}"
+    status_code: [200]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+    return_content: yes
+  changed_when: false
+  register: retrieve_quality_gate_output
+
+- name: Extract metrics for quality gate {{ quality_gate_name }}
+  ansible.builtin.set_fact:
+    quality_gate_conditions: "{{ retrieve_quality_gate_output.json.conditions }}"
+
+- name: Update conditions for quality gate {{ quality_gate_name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualitygates/update_condition"
+    body: "id={{ quality_gate_conditions | selectattr(\"metric\", \"equalto\", condition.metric) | map(attribute='id') | first }}&gateName={{ quality_gate_name }}&metric={{ condition.metric | urlencode() }}&op={{ condition.op | urlencode() }}&error={{ condition.error | urlencode() }}"
+    status_code: [200]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not (condition.deleted | default(false)) and condition.metric in (quality_gate_conditions | map(attribute='metric'))
+  register: update_condition_output
+
+- name: Delete conditions for quality gate {{ quality_gate_name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualitygates/delete_condition"
+    body: "id={{ quality_gate_conditions | selectattr(\"metric\", \"equalto\", condition.metric) | map(attribute='id') | first }}&gateName={{ quality_gate_name }}&metric={{ condition.metric | urlencode() }}&op={{ condition.op | urlencode() }}&error={{ condition.error | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: (condition.deleted | default(false)) and condition.metric in (quality_gate_conditions | map(attribute='metric'))
+  register: update_condition_output

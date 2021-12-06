@@ -1,0 +1,6 @@
+---
+- name: Projet tasks
+  ansible.builtin.include_tasks: tasks/project.yml
+  loop: "{{ sonarqube_configuration_projects }}"
+  loop_control:
+    loop_var: project

@@ -1,0 +1,153 @@
+---
+sonarqube_configuration_users:
+
+  # Global administrators
+  - login: admin
+    email: ''
+    name: admin
+    local: true
+    deleted: false
+    groups:
+      - name: sonar-users
+        assigned: true
+      - name: sonar-administrators
+        assigned: true
+
+  # Example local user
+  - login: example-user
+    email: ''
+    local: true
+    name: example-user
+    password: sonarqube
+    deleted: false
+    groups:
+      - name: example-group
+        assigned: true
+
+  - login: example-external-user
+    email: ''
+    local: false
+    name: example-user
+    deleted: false
+    groups:
+      - name: example-group
+        assigned: true
+
+sonarqube_configuration_quality_profiles:
+
+  # Java
+  - name: Custom way
+    language: java
+    parent: Sonar way
+    default: true
+    deleted: false
+
+  - name: Custom way copy
+    language: java
+    copy: Sonar way
+    default: false
+    deleted: false
+
+    # Activate or change level of some rule
+    # Rule cannot be deactivated for extended profiles
+    rules:
+
+      # Update severity
+
+      # Either re-interrupt this method or rethrow the "InterruptedException" that can be caught here.
+      - key: java:S2142
+        severity: INFO
+        reset: false
+        params: ''
+
+# Quality gates
+sonarqube_configuration_quality_gates:
+  - name: Example projets
+    default: false
+    deleted: false
+  - name: Example New projects
+    default: true
+    deleted: false
+    conditions:
+      - metric: security_rating
+        error: 1
+        op: GT
+        deleted: false
+      - metric: reliability_rating
+        error: 1
+        op: GT
+        deleted: false
+      - metric: security_hotspots_reviewed
+        error: 100
+        op: LT
+        deleted: false
+      - metric: coverage
+        error: 60
+        op: LT
+        deleted: false
+  - name: Example New projects without coverage
+    default: true
+    deleted: false
+    conditions:
+      - metric: security_rating
+        error: 1
+        op: GT
+        deleted: false
+      - metric: reliability_rating
+        error: 1
+        op: GT
+        deleted: false
+      - metric: security_hotspots_reviewed
+        error: 100
+        op: LT
+        deleted: false
+  - name: Example Legacy
+    default: false
+    deleted: false
+    conditions:
+      - metric: new_security_rating
+        error: 1
+        op: GT
+        deleted: false
+      - metric: new_reliability_rating
+        error: 1
+        op: GT
+        deleted: false
+      - metric: new_security_hotspots_reviewed
+        error: 100
+        op: LT
+        deleted: false
+      - metric: new_coverage
+        error: 60
+        op: LT
+        deleted: false
+
+sonarqube_configuration_projects:
+  - name: example-projet-created-by-ansible
+    key: example-projet-created-by-ansible
+    visibility: private
+    quality_gate: Sonar way
+    deleted: false
+    quality_profiles:
+      - name: Custom way
+        language: java
+        deleted: false
+    new_code:
+      type: NUMBER_OF_DAYS
+      value: 1
+    permission_template: template1
+
+# Permission template
+sonarqube_configuration_permission_templates:
+  - name: template1
+    description: Created automatically via Ansible sonarqube configuration role
+    pattern: template1-.*
+    deleted: false
+    groups:
+      - name: sonar-users
+        assigned: true
+
+sonarqube_configuration_internal_groups:
+  - name: example-group
+    description: Example group
+    deleted: false

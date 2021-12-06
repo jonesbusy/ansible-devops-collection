@@ -1,0 +1,47 @@
+---
+- name: Create quality gate {{ quality_gate.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualitygates/create?name={{ quality_gate.name | urlencode() }}"
+    status_code: [200, 400]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: create_quality_gate_output.status == 200
+  when: not quality_gate.deleted
+  register: create_quality_gate_output
+
+- name: Set default quality gate {{ quality_gate.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualitygates/set_as_default?name={{ quality_gate.name | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not quality_gate.deleted and quality_gate.default
+
+- name: Delete quality gate {{ quality_gate.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualitygates/destroy?name={{ quality_gate.name | urlencode() }}"
+    status_code: [204, 404]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: delete_quality_gate_output.status == 204
+  when: quality_gate.deleted and not quality_gate.default
+  register: delete_quality_gate_output
+
+- name: Quality gate conditions tasks
+  ansible.builtin.include_tasks: tasks/quality_gate_conditions.yml
+  loop: "{{ quality_gate.conditions }}"
+  loop_control:
+    loop_var: condition
+  vars:
+    quality_gate_name: "{{ quality_gate.name }}"
+  when: not quality_gate.deleted and quality_gate.conditions is defined

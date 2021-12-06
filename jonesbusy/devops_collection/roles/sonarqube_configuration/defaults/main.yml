@@ -1,1 +1,80 @@
 ---
+# Access
+sonarqube_configuration_sonarqube_url: https://localhost:443/sonarqube
+validate_certs: true
+
+# Environment
+sonarqube_configuration_environment_name: Ansible
+sonarqube_configuration_validate_certs: true
+
+# Username/passwords
+sonarqube_configuration_sonarqube_username: admin
+sonarqube_configuration_sonarqube_default_password: admin
+sonarqube_configuration_sonarqube_password: admin
+
+# Default permissions
+sonarqube_configuration_default_user_permissions: ['user', 'codeviewer', 'scan']
+sonarqube_configuration_default_admin_permissions: ['admin', 'issueadmin', 'securityhotspotadmin']
+
+# Global properties
+
+# Default properties always set
+sonarqube_configuration_default_global_single_properties:
+  - key: sonar.core.serverBaseURL
+    value: "{{ sonarqube_configuration_sonarqube_url }}"
+  - key: sonar.forceAuthentication
+    value: "true"
+  - key: sonar.lf.enableGravatar
+    value: "true"
+  - key: projects.default.visibility
+    value: private
+  - key: sonar.builtInQualityProfiles.disableNotificationOnUpdate
+    value: "true"
+sonarqube_configuration_global_single_properties: []
+
+# Default multi properties always set
+sonarqube_configuration_default_global_multi_properties:
+  - key: sonar.global.test.exclusions
+    value:
+      - "**/pom.xml"
+      - "**/node_modules"
+sonarqube_configuration_global_multi_properties: []
+
+# Groups
+sonarqube_configuration_internal_groups:
+
+  # System groups, do not delete
+  - name: sonar-users
+    description: Any new users created will automatically join this group
+    deleted: false
+  - name: sonar-administrators
+    description: System administrators
+    deleted: false
+
+# External users
+sonarqube_configuration_users:
+
+  # Global administrators
+  - login: admin
+    email: ''
+    password: "{{ sonarqube_configuration_sonarqube_password }}"
+    name: admin
+    local: true
+    deleted: false
+    groups:
+      - name: sonar-users
+        assigned: true
+      - name: sonar-administrators
+        assigned: true
+
+# Permission template
+sonarqube_configuration_permission_templates: []
+
+# Default projects
+sonarqube_configuration_projects: []
+
+# Quality gates
+sonarqube_configuration_quality_gates: []
+
+# Quality profiles
+sonarqube_configuration_quality_profiles: []

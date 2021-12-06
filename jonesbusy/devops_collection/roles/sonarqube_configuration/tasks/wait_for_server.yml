@@ -1,0 +1,65 @@
+---
+- name: External database block
+  block:
+
+  - name: Check external database port open
+    ansible.builtin.wait_for:
+      host: "{{ sonarqube_configuration_external_db_host }}"
+      port: "{{ sonarqube_configuration_external_db_port }}"
+      sleep: 5
+      timeout: 30
+
+  - name: Check postgresql available
+    community.postgresql.postgresql_ping:
+      login_host: "{{ sonarqube_configuration_external_db_host }}"
+      port: "{{ sonarqube_configuration_external_db_port }}"
+      login_user: "{{ sonarqube_configuration_db_login }}"
+      login_password: "{{ sonarqube_configuration_db_password }}"
+    register: pg_result
+    until: pg_result.is_available is defined and pg_result.is_available
+    retries: 10
+    delay: 5
+
+  when:
+    - sonarqube_configuration_external_db_host is defined
+    - sonarqube_configuration_external_db_port is defined
+    - sonarqube_configuration_db_login is defined
+    - sonarqube_configuration_db_password is defined
+
+- name: Wait for initial schema migration to be completed (sonarqube first start)
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/system/status"
+    status_code: 200
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    return_content: yes
+  register: sonarqube_result
+  until: sonarqube_result.status == 200 and sonarqube_result.json.status != "DB_MIGRATION_RUNNING" and sonarqube_result.json.status != "STARTING"
+  retries: 10
+  delay: 10
+  delegate_to: 127.0.0.1
+  changed_when: false
+
+- name: Wait for sonarqube to be fully operational
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/system/status"
+    status_code: 200
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    return_content: true
+  register: sonarqube_result
+  until: sonarqube_result.status == 200 and sonarqube_result.json is defined and sonarqube_result.json.status == "UP"
+  retries: 50
+  delay: 5
+  delegate_to: 127.0.0.1
+
+- name: Include vars for sonarqube version major version
+  ansible.builtin.include_vars:
+    file: "{{ sonarqube_result.json.version[:3] }}.yml"
+  delegate_to: 127.0.0.1
+
+- name: Include vars for sonarqube version minor version
+  ansible.builtin.include_vars:
+    file: "{{ sonarqube_result.json.version[:5] }}.yml"
+  failed_when: false
+  delegate_to: 127.0.0.1

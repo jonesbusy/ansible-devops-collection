@@ -1,0 +1,4 @@
+warn_list:
+  - yaml
+enable_list:
+  - fqcn-builtins

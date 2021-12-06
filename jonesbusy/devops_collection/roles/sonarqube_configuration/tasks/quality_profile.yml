@@ -1,0 +1,179 @@
+---
+- name: Create quality profile {{ quality_profile.name }} and language {{ quality_profile.language }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/create?name={{ quality_profile.name | urlencode() }}&language={{ quality_profile.language | urlencode() }}"
+    status_code: [200, 400]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: create_quality_profile_output.status == 200
+  when: not quality_profile.deleted and quality_profile.from is not defined
+  register: create_quality_profile_output
+
+- name: Retrieve quality profile to copy
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/search?qualityProfile={{ quality_profile.from | urlencode() }}&language={{ quality_profile.language | urlencode() }}"
+    status_code: [200, 404]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not quality_profile.deleted and quality_profile.from is defined and quality_profile.from
+  register: show_quality_profile_copy_output
+  failed_when: (show_quality_profile_copy_output.json.profiles | length) != 1
+
+- name: Retrieve quality profile to copy destination
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/search?qualityProfile={{ quality_profile.name | urlencode() }}&language={{ quality_profile.language | urlencode() }}"
+    status_code: [200, 404]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not quality_profile.deleted and quality_profile.from is defined and quality_profile.from
+  register: show_quality_profile_copy_destination_output
+
+- name: Copy quality profile if doesn't exists
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/copy?toName={{ quality_profile.name | urlencode() }}&fromKey={{ show_quality_profile_copy_output.json.profiles[0].key | urlencode() }}&language={{ quality_profile.language | urlencode() }}"
+    status_code: [200]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: true
+  when: not quality_profile.deleted and quality_profile.from is defined and (show_quality_profile_copy_destination_output.json.profiles | length == 0)
+  register: copy_quality_profile_output
+
+- name: Set parent for {{ quality_profile.name }} if needed
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/change_parent?qualityProfile={{ quality_profile.name | urlencode() }}&language={{ quality_profile.language | urlencode() }}&parentQualityProfile={{ quality_profile.parent | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not quality_profile.deleted and quality_profile.parent is defined and quality_profile.from is not defined
+
+- name: Remove parent for {{ quality_profile.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/change_parent?qualityProfile={{ quality_profile.name | urlencode() }}&language={{ quality_profile.language | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not quality_profile.deleted and quality_profile.parent is not defined and quality_profile.from is not defined
+
+- name: Set default quality profile {{ quality_profile.name }} for language {{ quality_profile.language }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/set_default?qualityProfile={{ quality_profile.name | urlencode() }}&language={{ quality_profile.language | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not quality_profile.deleted and quality_profile.default
+
+- name: Add quality profile {{ quality_profile.name }} group for language {{ quality_profile.language }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/add_group?qualityProfile={{ quality_profile.name | urlencode() }}&language={{ quality_profile.language | urlencode() }}&group={{ group.name }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  loop: "{{ quality_profile.groups }}"
+  loop_control:
+    loop_var: group
+  when: not quality_profile.deleted and quality_profile.groups is defined and not group.deleted
+
+- name: Remove quality profile {{ quality_profile.name }} group for language {{ quality_profile.language }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/remove_group?qualityProfile={{ quality_profile.name | urlencode() }}&language={{ quality_profile.language | urlencode() }}&group={{ group.name }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  loop: "{{ quality_profile.groups }}"
+  loop_control:
+    loop_var: group
+  when: not quality_profile.deleted and quality_profile.groups is defined and group.deleted
+
+- name: Delete quality profile
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/delete?qualityProfile={{ quality_profile.name | urlencode() }}&language={{ quality_profile.language | urlencode() }}"
+    status_code: [204, 404]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: delete_quality_profile_output.status == 204
+  when: quality_profile.deleted and not quality_profile.default
+  register: delete_quality_profile_output
+
+- name: Retrieve quality profile to configure rules
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/search?qualityProfile={{ quality_profile.name | urlencode() }}&language={{ quality_profile.language | urlencode() }}"
+    status_code: [200, 404]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not quality_profile.deleted and quality_profile.rules is defined
+  register: quality_profile_for_rules_output
+
+- name: Activate rule for {{ quality_profile.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/activate_rule?key={{ quality_profile_for_rules_output.json.profiles[0].key }}&rule={{ rule.key | urlencode() }}&severity={{ rule.severity | urlencode() }}&reset={{ rule.reset | default(false) | lower() | urlencode() }}&params={{ rule.params | default('') | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+    return_content: yes
+  changed_when: false
+  loop: "{{ quality_profile.rules }}"
+  loop_control:
+    loop_var: rule
+  when: not quality_profile.deleted and quality_profile.rules is defined and not (rule.disabled | default(false))
+  register: create_quality_profile_output
+
+- name: Deactivate rule for {{ quality_profile.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/deactivate_rule?key={{ quality_profile_for_rules_output.json.profiles[0].key }}&rule={{ rule.key | urlencode() }}&severity={{ rule.severity | urlencode() }}&reset={{ rule.reset | default(false) | lower() | urlencode() }}&params={{ rule.params | default('') | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+    return_content: yes
+  changed_when: false
+  loop: "{{ quality_profile.rules }}"
+  loop_control:
+    loop_var: rule
+  when: not quality_profile.deleted and quality_profile.rules is defined and (rule.disabled | default(false))
+  register: create_quality_profile_output
