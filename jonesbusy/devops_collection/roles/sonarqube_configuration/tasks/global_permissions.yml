@@ -1,0 +1,48 @@
+---
+- name: Remove right for anyone to provision projets
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_group?groupName=anyone&permission=provisioning"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+
+- name: Remove default rights from default template
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_group_from_template?groupName=sonar-users&templateName={{ \"Default template\" | urlencode() }}&permission={{ permission }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  loop:
+    - codeviewer
+    - user
+    - issueadmin
+    - securityhotspotadmin
+  loop_control:
+    loop_var: permission
+
+- name: Ensure administrator have admin access to default template
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/add_group_to_template?groupName=sonar-administrators&templateName={{ \"Default template\" | urlencode() }}&permission={{ permission }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  loop:
+    - admin
+    - issueadmin
+    - securityhotspotadmin
+    - user
+    - codeviewer
+  loop_control:
+    loop_var: permission

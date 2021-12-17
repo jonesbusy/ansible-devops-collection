@@ -1,0 +1,21 @@
+---
+- name: Setup project properties
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/settings/set?key={{ prop.key }}&value={{ prop.value | urlencode() }}&component={{ project_key }}"
+    status_code: 204
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+
+- name: Reset project properties
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/settings/reset?keys={{ prop.key }}&component={{ project_key }}"
+    status_code: 204
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  when: prop.reset is defined and prop.reset

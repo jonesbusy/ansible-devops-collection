@@ -1,1 +1,5 @@
 ---
+# Version
+sonarqube_docker_postgresql_version: 13.5
+sonarqube_docker_sonarqube_version: 9.2.1-community
+sonarqube_docker_sonarqube_dockerfile: Dockerfile

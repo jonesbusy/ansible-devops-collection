@@ -1,0 +1,26 @@
+---
+- name: Assign group
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/user_groups/add_user?login={{ login | urlencode() }}&name={{ group.name | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: group.assigned and group.name != 'sonar-users'
+  register: assign_group_output
+
+- name: Remove user group
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/user_groups/remove_user?login={{ login | urlencode() }}&name={{ group.name | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not group.assigned and group.name != 'sonar-users'
+  register: assign_group_output

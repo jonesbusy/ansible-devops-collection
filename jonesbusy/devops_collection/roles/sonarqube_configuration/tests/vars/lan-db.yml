@@ -1,0 +1,9 @@
+---
+sonarqube_configuration_sonarqube_url: http://192.168.30.100:9000
+sonarqube_configuration_sonarqube_password: sonarqube
+
+# Use PG database. Not H2
+sonarqube_configuration_external_db_host: 192.168.30.100
+sonarqube_configuration_external_db_port: 5432
+sonarqube_configuration_db_login: sonarqube
+sonarqube_configuration_db_password: sonarqube

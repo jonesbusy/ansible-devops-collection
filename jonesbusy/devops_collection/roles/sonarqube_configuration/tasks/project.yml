@@ -1,0 +1,168 @@
+---
+- name: Create project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/projects/create?name={{ project.name | urlencode() }}&project={{ project.key | urlencode() }}&visibility={{ project.visibility }}"
+    status_code: [200, 400]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: create_project_output.status == 200
+  when: not project.deleted
+  register: create_project_output
+
+- name: Delete project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/projects/delete?project={{ project.key | urlencode() }}"
+    status_code: [204, 404]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: delete_project_output.status == 200
+  when: project.deleted
+  register: delete_project_output
+
+- name: Update visibility
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/projects/update_visibility?project={{ project.key | urlencode() }}&visibility={{ project.visibility }}"
+    status_code: 204
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted
+  register: create_project_output
+
+- name: Select quality gate
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualitygates/select?projectKey={{ project.key | urlencode() }}&gateName={{ project.quality_gate | urlencode() }}"
+    status_code: 204
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.quality_gate is defined
+  register: select_quality_gate
+
+- name: Remove quality gate
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualitygates/deselect?projectKey={{ project.key | urlencode() }}"
+    status_code: 204
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.quality_gate is not defined
+  register: select_quality_gate
+
+- name: Select new code period
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/new_code_periods/set?project={{ project.key | urlencode() }}&type={{ project.new_code.type | urlencode() }}&value={{ project.new_code.value | urlencode() }}"
+    status_code: 200
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.new_code is defined
+
+- name: Unset new code period
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/new_code_periods/unset?project={{ project.key | urlencode() }}"
+    status_code: 200
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.new_code is not defined
+
+- name: Create Tags
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/project_tags/set?project={{ project.key | urlencode() }}&tags={{ project.tags | join(',') | urlencode() }}&visibility={{ project.visibility }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: create_project_output.status == 200
+  when: not project.deleted and project.tags is defined
+  register: create_project_output
+
+- name: Remove Tags
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/project_tags/set?project={{ project.key | urlencode() }}&tags="
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  when: not project.deleted and project.tags is not defined
+
+- name: Fail if both permission template and permissions are defined
+  ansible.builtin.assert:
+    that:
+      - not (project.permission_template is defined and project.permissions is defined)
+
+- name: Assign permission template
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/apply_template?projectKey={{ project.key | urlencode() }}&templateName={{ project.permission_template }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permission_template is defined
+
+# Quality profiles
+- name: Project quality profile tasks
+  ansible.builtin.include_tasks: tasks/project_quality_profile.yml
+  loop: "{{ project.quality_profiles }}"
+  loop_control:
+    loop_var: quality_profile
+  when: project.quality_profiles is defined
+
+# Project properties
+- name: Project properties tasks
+  ansible.builtin.include_tasks: tasks/project_properties.yml
+  loop: "{{ project.settings }}"
+  loop_control:
+    loop_var: prop
+  vars:
+    project_key: "{{ project.key }}"
+  when: project.settings is defined
+
+# Project multi properties
+- name: Project multi properties tasks
+  ansible.builtin.include_tasks: tasks/project_multi_properties.yml
+  loop: "{{ project.multi_settings }}"
+  loop_control:
+    loop_var: prop
+  vars:
+    project_key: "{{ project.key }}"
+  when: project.multi_settings is defined
+
+# Project field properties
+- name: Project field properties tasks
+  ansible.builtin.include_tasks: tasks/project_field_properties.yml
+  loop: "{{ project.field_settings }}"
+  loop_control:
+    loop_var: prop
+  vars:
+    project_key: "{{ project.key }}"
+  when: project.field_settings is defined

@@ -1,0 +1,7 @@
+---
+# Users
+- name: User tasks
+  ansible.builtin.include_tasks: tasks/user.yml
+  loop: "{{ sonarqube_configuration_users | default([]) }}"
+  loop_control:
+    loop_var: user

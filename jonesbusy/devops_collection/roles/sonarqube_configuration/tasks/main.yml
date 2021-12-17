@@ -1,1 +1,110 @@
 ---
+# Wait for server to be up
+- name: Wait for server tasks
+  ansible.builtin.include_tasks:
+    file: tasks/wait_for_server.yml
+    apply:
+      tags:
+        - always
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Change default password
+- name: Change default password tasks
+  ansible.builtin.include_tasks:
+    file: tasks/change_default_password.yml
+    apply:
+      tags:
+        - always
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Set global permission
+- name: Global permission
+  ansible.builtin.include_tasks:
+    file: tasks/global_permissions.yml
+    apply:
+      tags:
+        - permissions
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Groups
+- name: Groups tasks
+  ansible.builtin.include_tasks:
+    file: tasks/groups.yml
+    apply:
+      tags:
+        - groups
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Users
+- name: Users tasks
+  ansible.builtin.include_tasks:
+    file: tasks/users.yml
+    apply:
+      tags:
+        - users
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Properties
+- name: Properties tasks
+  ansible.builtin.include_tasks:
+    file: tasks/properties.yml
+    apply:
+      tags:
+        - properties
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Quality gates
+- name: Quality gates tasks
+  ansible.builtin.include_tasks:
+    file: tasks/quality_gates.yml
+    apply:
+      tags:
+        - quality_gates
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Quality profiles
+- name: Quality profiles tasks
+  ansible.builtin.include_tasks:
+    file: tasks/quality_profiles.yml
+    apply:
+      tags:
+        - quality_profiles
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Permission templates
+- name: Permission templates tasks
+  ansible.builtin.include_tasks:
+    file: tasks/permission_templates.yml
+    apply:
+      tags:
+        - permissions
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Projects
+- name: Projet tasks
+  ansible.builtin.include_tasks:
+    file: tasks/projects.yml
+    apply:
+      tags:
+        - projects
+  tags:
+    - always
+  when: not ansible_check_mode

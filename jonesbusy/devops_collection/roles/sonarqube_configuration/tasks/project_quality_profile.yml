@@ -1,0 +1,26 @@
+---
+- name: Add quality profile to project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/add_project?project={{ project.key | urlencode() }}&language={{ quality_profile.language | urlencode() }}&qualityProfile={{ quality_profile.name | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: assign_quality_profile.status == 200
+  when: not quality_profile.deleted
+  register: assign_quality_profile
+
+- name: Remove quality profile from project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/qualityprofiles/remove_project?project={{ project.key | urlencode() }}&language={{ quality_profile.language | urlencode() }}&qualityProfile={{ quality_profile.name | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: remove_quality_profile.status == 200
+  when: quality_profile.deleted
+  register: remove_quality_profile

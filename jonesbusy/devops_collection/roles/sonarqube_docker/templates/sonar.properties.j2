@@ -1,0 +1,34 @@
+{{ ansible_managed }}
+
+# Update center
+sonar.updatecenter.url=http://update.sonarsource.org/update-center.properties
+
+sonar.web.context=/sonarqube
+
+# Database
+sonar.jdbc.username={{ sonarqube_docker_db_login }}
+sonar.jdbc.password={{ sonarqube_docker_db_password }}
+sonar.jdbc.url=jdbc:postgresql://postgres:5432/{{ db_name }}?sslmode=disable
+
+# Resources
+sonar.web.javaOpts=-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError -Djavax.net.ssl.trustStore=/opt/sonarqube/sonarqube-truststore.jks -Djavax.net.ssl.trustStorePassword={{ truststore_pass }}
+
+# Web engine
+sonar.web.host=0.0.0.0
+sonar.web.port=9000
+
+# Compute engine
+sonar.ce.javaOpts=-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError
+
+# Elastic search
+#sonar.search.javaOpts=-Xms512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError
+#sonar.search.port=9001
+
+# Update center
+sonar.updatecenter.activate=true
+
+# Telemetry
+sonar.telemetry.enable=false
+
+# Logs
+sonar.log.level.app=INFO

@@ -1,0 +1,199 @@
+---
+- name: Create permission template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/create_template?name={{ permission_template.name | urlencode() }}&description={{ permission_template.description | urlencode() }}&projectKeyPattern={{ permission_template.pattern | default('') | urlencode() }}"
+    status_code: [200, 400]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+    return_content: yes
+  changed_when: create_permission_template_output.status == 200
+  when: not permission_template.deleted
+  register: create_permission_template_output
+
+- name: Retrieve permission template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/search_templates?q={{ permission_template.name | urlencode() }}"
+    status_code: [200]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+    return_content: yes
+  changed_when: false
+  when: create_permission_template_output.status == 400 and not permission_template.deleted
+  register: update_permission_template_output
+
+- name: Update permission template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/update_template?id={{ update_permission_template_output.json.permissionTemplates[0].id }}&name={{ permission_template.name | urlencode() }}&description={{ permission_template.description | urlencode() }}&projectKeyPattern={{ permission_template.pattern | default('') | urlencode() }}"
+    status_code: [200]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: create_permission_template_output.status == 400 and not permission_template.deleted
+  register: create_permission_template_output
+
+- name: Delete permission template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/delete_template?templateName={{ permission_template.name | urlencode() }}"
+    status_code: [204, 404]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: delete_permission_template_output.status == 204
+  when: permission_template.deleted
+  register: delete_permission_template_output
+
+- name: Ensure administrators have full access to template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/add_group_to_template?groupName=sonar-administrators&templateName={{ permission_template.name | urlencode() }}&permission={{ permission }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted
+  loop: "{{ sonarqube_configuration_default_user_permissions + sonarqube_configuration_default_admin_permissions }}"
+  loop_control:
+    loop_var: permission
+
+- name: Setup standard groups for template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/add_group_to_template?groupName={{ item[1].name }}&templateName={{ permission_template.name | urlencode() }}&permission={{ item[0] }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted and permission_template.groups is defined and (item[1].admin is not defined or not item[1].admin) and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_user_permissions | product(permission_template.groups) }}"
+
+- name: Ensure to remove admin right for standard groups for template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_group_from_template?groupName={{ item[1].name }}&templateName={{ permission_template.name | urlencode() }}&permission={{ item[0] }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted and permission_template.groups is defined and (item[1].admin is not defined or not item[1].admin) and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_admin_permissions | product(permission_template.groups) }}"
+
+- name: Setup standard users for template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/add_user_to_template?login={{ item[1].login }}&templateName={{ permission_template.name | urlencode() }}&permission={{ item[0] }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted and permission_template.users is defined and (item[1].admin is not defined or not item[1].admin) and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_user_permissions | product(permission_template.users) }}"
+
+- name: Ensure to remove admin right for standard user for template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_user_from_template?login={{ item[1].login }}&templateName={{ permission_template.name | urlencode() }}&permission={{ item[0] }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted and permission_template.users is defined and (item[1].admin is not defined or not item[1].admin) and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_admin_permissions | product(permission_template.users) }}"
+
+- name: Setup admin groups for template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/add_group_to_template?groupName={{ item[1].name }}&templateName={{ permission_template.name | urlencode() }}&permission={{ item[0] }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted and permission_template.groups is defined and item[1].admin is defined and item[1].admin and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_admin_permissions | product(permission_template.groups) }}"
+
+- name: Ensure to remove standard rights for admin groups for template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_group_from_template?groupName={{ item[1].name }}&templateName={{ permission_template.name | urlencode() }}&permission={{ item[0] }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted and permission_template.groups is defined and item[1].admin is defined and item[1].admin and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_user_permissions | product(permission_template.groups) }}"
+
+- name: Setup admin users for template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/add_user_to_template?login={{ item[1].login }}&templateName={{ permission_template.name | urlencode() }}&permission={{ item[0] }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted and permission_template.users is defined and item[1].admin is defined and item[1].admin and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_admin_permissions | product(permission_template.users) }}"
+
+- name: Ensure to remove standard rights for admin user for template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_user_from_template?login={{ item[1].login }}&templateName={{ permission_template.name | urlencode() }}&permission={{ item[0] }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted and permission_template.users is defined and item[1].admin is defined and item[1].admin and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_user_permissions | product(permission_template.users) }}"
+
+- name: Remove group if needed for template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_group_from_template?groupName={{ item[1].name }}&templateName={{ permission_template.name | urlencode() }}&permission={{ item[0] }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted and permission_template.groups is defined and not item[1].assigned
+  loop: "{{ (sonarqube_configuration_default_user_permissions + sonarqube_configuration_default_admin_permissions) | product(permission_template.groups) }}"
+
+- name: Remove user if needed for template {{ permission_template.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_user_from_template?login={{ item[1].login }}&templateName={{ permission_template.name | urlencode() }}&permission={{ item[0] }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not permission_template.deleted and permission_template.users is defined and not item[1].assigned
+  loop: "{{ (sonarqube_configuration_default_user_permissions + sonarqube_configuration_default_admin_permissions) | product(permission_template.users) }}"

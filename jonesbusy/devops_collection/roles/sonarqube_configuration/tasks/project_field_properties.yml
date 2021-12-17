@@ -1,0 +1,23 @@
+---
+- name: Setup project field properties
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/settings/set"
+    status_code: 204
+    body: "key={{ prop.key | urlencode() }}&component={{ project_key | urlencode() }}{{ lookup('template', 'field_property.j2') }}"
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+
+- name: Reset project field properties
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/settings/reset"
+    status_code: 204
+    body: "keys={{ prop.key | urlencode() }}&component={{ project_key | urlencode() }}"
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  when: prop.reset is defined and prop.reset

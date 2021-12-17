@@ -1,0 +1,7 @@
+---
+# Permission templates
+- name: Permission templates task
+  ansible.builtin.include_tasks: tasks/permission_template.yml
+  loop: "{{ sonarqube_configuration_permission_templates }}"
+  loop_control:
+    loop_var: permission_template

@@ -1,0 +1,24 @@
+---
+# Quality profiles without parent
+- name: Quality profile without parent tasks
+  ansible.builtin.include_tasks: tasks/quality_profile.yml
+  loop: "{{ sonarqube_configuration_quality_profiles }}"
+  loop_control:
+    loop_var: quality_profile
+  when: quality_profile.parent is not defined
+
+# Quality profiles with existing parent
+- name: Quality profile with existing parent tasks
+  ansible.builtin.include_tasks: tasks/quality_profile.yml
+  loop: "{{ sonarqube_configuration_quality_profiles }}"
+  loop_control:
+    loop_var: quality_profile
+  when: quality_profile.parent is defined and (quality_profile.parent == 'Sonar way' or quality_profile.parent == 'Sonar way recommended' or quality_profile.parent == 'Sonar way Recommended')
+
+# Others profiles
+- name: Quality profile with other parent tasks
+  ansible.builtin.include_tasks: tasks/quality_profile.yml
+  loop: "{{ sonarqube_configuration_quality_profiles }}"
+  loop_control:
+    loop_var: quality_profile
+  when: quality_profile.parent is defined and (quality_profile.parent != 'Sonar way' and quality_profile.parent != 'Sonar way recommended' and quality_profile.parent != 'Sonar way Recommended')

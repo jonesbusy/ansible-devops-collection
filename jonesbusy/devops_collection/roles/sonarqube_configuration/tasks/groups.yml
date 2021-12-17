@@ -1,0 +1,7 @@
+---
+# Group
+- name: Group tasks
+  ansible.builtin.include_tasks: tasks/group.yml
+  loop: "{{ sonarqube_configuration_internal_groups }}"
+  loop_control:
+    loop_var: group

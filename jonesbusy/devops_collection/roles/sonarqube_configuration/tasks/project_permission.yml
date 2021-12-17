@@ -1,0 +1,130 @@
+---
+- name: Setup standard groups for project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/add_group?groupName={{ item[1].name }}&permission={{ item[0] }}&projectKey={{ project.key | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permissions.groups is defined and (item[1].admin is not defined or not item[1].admin) and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_user_permissions | product(project.permissions.groups) }}"
+
+- name: Ensure to remove admin right for standard groups for project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_group?groupName={{ item[1].name }}&permission={{ item[0] }}&projectKey={{ project.key | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permissions.groups is defined and (item[1].admin is not defined or not item[1].admin) and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_admin_permissions | product(project.permissions.groups) }}"
+
+- name: Setup standard users for project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/add_user?login={{ item[1].login }}&permission={{ item[0] }}&projectKey={{ project.key | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permissions.users is defined and (item[1].admin is not defined or not item[1].admin) and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_user_permissions | product(project.permissions.users) }}"
+
+- name: Ensure to remove admin right for standard users for project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_user?login={{ item[1].login }}&permission={{ item[0] }}&projectKey={{ project.key | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permissions.users is defined and (item[1].admin is not defined or not item[1].admin) and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_admin_permissions | product(project.permissions.users) }}"
+
+- name: Setup admin groups for project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/add_group?groupName={{ item[1].name }}&permission={{ item[0] }}&projectKey={{ project.key | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permissions.groups is defined and item[1].admin is defined and item[1].admin and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_admin_permissions | product(project.permissions.groups) }}"
+
+- name: Ensure to remove standard rights for admin groups for project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_group?groupName={{ item[1].name }}&permission={{ item[0] }}&projectKey={{ project.key | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permissions.groups is defined and item[1].admin is defined and item[1].admin and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_user_permissions | product(project.permissions.groups) }}"
+
+- name: Setup admin users for project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/add_user?login={{ item[1].login }}&permission={{ item[0] }}&projectKey={{ project.key | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permissions.users is defined and item[1].admin is defined and item[1].admin and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_admin_permissions | product(project.permissions.users) }}"
+
+- name: Ensure to remove standard rights for admin users for project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_user?login={{ item[1].login }}&permission={{ item[0] }}&projectKey={{ project.key | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permissions.users is defined and item[1].admin is defined and item[1].admin and item[1].assigned
+  loop: "{{ sonarqube_configuration_default_user_permissions | product(project.permissions.users) }}"
+
+- name: Remove group if needed for project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_group?groupName={{ item[1].name }}&permission={{ item[0] }}&projectKey={{ project.key | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permissions.groups is defined and not item[1].assigned
+  loop: "{{ (sonarqube_configuration_default_user_permissions + sonarqube_configuration_default_admin_permissions) | product(project.permissions.groups) }}"
+
+- name: Remove user if not needed for project
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ sonarqube_configuration_sonarqube_url }}/api/permissions/remove_user?login={{ item[1].login }}&permission={{ item[0] }}&projectKey={{ project.key | urlencode() }}"
+    status_code: [204]
+    url_username: "{{ sonarqube_configuration_sonarqube_username }}"
+    url_password: "{{ sonarqube_configuration_sonarqube_password }}"
+    validate_certs: "{{ sonarqube_configuration_validate_certs }}"
+    force_basic_auth: yes
+  changed_when: false
+  when: not project.deleted and project.permissions.users is defined and not item[1].assigned
+  loop: "{{ (sonarqube_configuration_default_user_permissions + sonarqube_configuration_default_admin_permissions) | product(project.permissions.users) }}"
