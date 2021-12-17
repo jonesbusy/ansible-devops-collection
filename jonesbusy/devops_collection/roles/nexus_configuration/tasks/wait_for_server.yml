@@ -1,0 +1,12 @@
+---
+- name: Wait for Nexus server to be fully operational
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/status"
+    status_code: 200
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+  register: nexus_result
+  until: nexus_result.status == 200
+  retries: 50
+  delay: 5
+  delegate_to: 127.0.0.1

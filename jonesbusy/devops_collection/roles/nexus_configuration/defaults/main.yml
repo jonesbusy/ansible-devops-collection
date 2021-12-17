@@ -1,1 +1,362 @@
 ---
+nexus_configuration_nexus_url: https://localhost:443/nexus
+nexus_configuration_validate_certs: true
+
+# Auth
+nexus_configuration_auth_provider: local
+nexus_configuration_username: admin
+nexus_configuration_password: nexus
+
+# Default password for installation
+nexus_configuration_default_password: admin123
+
+# Cleanup policy task
+# Must run AFTER all compact blobstore to give 1 day retention
+# To restore soft-deleted component before purging the blobstore
+nexus_configuration_cleanup_policy_task: "0 0 2 * * ?"
+
+# Ensure to backup metadata in case we need to restore blob without metadata
+nexus_configuration_backup_metadata_task: "0 0 3 * * ?"
+
+# Default email for tasks
+nexus_configuration_tasks_email: 'jonesbusy@gmail.com'
+nexus_configuration_tasks_condition: SUCCESS_FAILURE
+
+# Local users
+nexus_configuration_local_users:
+  - id: anonymous
+    email: ""
+    first_name: Anonymous
+    last_name: User
+    status: active
+    roles: ['nexus-anonymous']
+    deleted: false
+
+# Repositories privileges
+nexus_configuration_repository_privileges_selectors:
+
+  # Docker system
+  # Some issue here NEXUS-24029
+  - name: docker-login
+    description: Allow docker login
+    format: docker
+    selector: docker-login
+    repository: "*"
+    actions: ["READ"]
+    deleted: false
+
+# Roles
+nexus_configuration_roles:
+
+  # Ideally do not use. Allow deploying everything everywhere without restriction
+  - id: global-deploy
+    name: global-deploy
+    description: Role to deploy artifact globally
+    roles: ['nexus-anonymous']
+    privileges: ['nx-repository-view-*-*-*']
+    deleted: false
+
+  # Anonymous access. Only public repositories!
+  - id: nexus-anonymous
+    name: nexus-anonymous
+    description: Anonymous access to some download repositories
+    roles: []
+    privileges: []
+
+    deleted: false
+
+# Blob store
+nexus_configuration_blob_stores:
+
+  # Default blobstore
+  - name: default
+    path: default
+    compact_cron: '0 0 0 * * ?'
+    deleted: false
+
+  # General group
+  - name: group
+    path: group
+    compact_cron: "0 0 0 * * ?"
+    deleted: false
+    quota: 1000
+
+# Content selectors
+nexus_configuration_content_selectors:
+
+  # System docker. See https://help.sonatype.com/repomanager3/formats/docker-registry/content-selectors-and-docker
+  - name: docker-login
+    description: docker login
+    expression: format == \"docker\" and path == \"/v2/\"
+    deleted: false
+
+  # Docker
+  - name: docker
+    description: Docker artifacts
+    expression: format == \"docker\"
+    deleted: false
+
+  # RAW
+  - name: raw
+    description: Raw all artifacts
+    expression: format == \"raw\"
+    deleted: false
+
+# Cleanup policies
+nexus_configuration_cleanup_policies:
+
+  # Maven
+  - name: maven-snapshots-policy-90-days
+    type: maven2
+    description: Remove all maven snapshots not updated and downloaded since 3 months
+    timestamp: "7776000"
+    prerelease: true
+    deleted: false
+  - name: maven-snapshots-policy-30-days
+    type: maven2
+    description: Remove all maven snapshots not updated and downloaded since 30 days
+    timestamp: "2592000"
+    prerelease: true
+    deleted: false
+  - name: maven-snapshots-policy-7-days
+    type: maven2
+    description: Remove all maven snapshots not updated and downloaded since 7 days
+    timestamp: "604800"
+    prerelease: true
+    deleted: false
+  - name: maven-snapshots-policy-1-days
+    type: maven2
+    description: Remove all maven snapshots not updated and downloaded since 1 days
+    timestamp: "86400"
+    prerelease: true
+    deleted: false
+
+  - name: maven-releases-policy-90-days
+    type: maven2
+    description: Remove all maven releases not updated and downloaded since 3 months
+    timestamp: "7776000"
+    prerelease: false
+    deleted: false
+  - name: maven-releases-policy-30-days
+    type: maven2
+    description: Remove all maven releases not updated and downloaded since 30 days
+    timestamp: "2592000"
+    prerelease: false
+    deleted: false
+  - name: maven-releases-policy-7-days
+    type: maven2
+    description: Remove all maven releases not updated and downloaded since 7 days
+    timestamp: "604800"
+    prerelease: false
+    deleted: false
+  - name: maven-releases-policy-1-days
+    type: maven2
+    description: Remove all maven releases not updated and downloaded since 1 days
+    timestamp: "86400"
+    prerelease: false
+    deleted: false
+
+  # NPM
+  - name: npm-snapshots-policy-90-days
+    type: npm
+    description: Remove all npm snapshots not updated and downloaded since 3 months
+    timestamp: "7776000"
+    prerelease: true
+    deleted: false
+  - name: npm-snapshots-policy-30-days
+    type: npm
+    description: Remove all npm snapshots not updated and downloaded since 30 days
+    timestamp: "2592000"
+    prerelease: true
+    deleted: false
+  - name: npm-snapshots-policy-7-days
+    type: npm
+    description: Remove all npm snapshots not updated and downloaded since 7 days
+    timestamp: "604800"
+    prerelease: true
+    deleted: false
+  - name: npm-snapshots-policy-1-days
+    type: npm
+    description: Remove all npm snapshots not updated and downloaded since 1 days
+    timestamp: "86400"
+    prerelease: true
+    deleted: false
+
+  - name: npm-releases-policy-90-days
+    type: npm
+    description: Remove all npm releases not updated and downloaded since 3 months
+    timestamp: "7776000"
+    prerelease: false
+    deleted: false
+  - name: npm-releases-policy-30-days
+    type: npm
+    description: Remove all npm releases not updated and downloaded since 30 days
+    timestamp: "2592000"
+    prerelease: false
+    deleted: false
+  - name: npm-releases-policy-7-days
+    type: npm
+    description: Remove all npm releases not updated and downloaded since 7 days
+    timestamp: "604800"
+    prerelease: false
+    deleted: false
+  - name: npm-releases-policy-1-days
+    type: npm
+    description: Remove all npm releases not updated and downloaded since 1 days
+    timestamp: "86400"
+    prerelease: false
+    deleted: false
+
+  # Pypi
+  - name: pypi-policy-90-days
+    type: pypi
+    description: Remove all pypi not updated and downloaded since 3 months
+    timestamp: "7776000"
+    deleted: false
+  - name: pypi-policy-30-days
+    type: pypi
+    description: Remove all pypi not updated and downloaded since 30 days
+    timestamp: "2592000"
+    deleted: false
+  - name: pypi-policy-7-days
+    type: pypi
+    description: Remove all pypi not updated and downloaded since 7 days
+    timestamp: "604800"
+    deleted: false
+  - name: pypi-policy-1-days
+    type: pypi
+    description: Remove all pypi not updated and downloaded since 1 days
+    timestamp: "86400"
+    deleted: false
+
+  # Go
+  - name: go-policy-90-days
+    type: go
+    description: Remove all go not updated and downloaded since 3 months
+    timestamp: "7776000"
+    deleted: false
+  - name: go-policy-30-days
+    type: go
+    description: Remove all go not updated and downloaded since 30 days
+    timestamp: "2592000"
+    deleted: false
+  - name: go-policy-7-days
+    type: go
+    description: Remove all go not updated and downloaded since 7 days
+    timestamp: "604800"
+    deleted: false
+  - name: go-policy-1-days
+    type: go
+    description: Remove all go not updated and downloaded since 1 days
+    timestamp: "86400"
+    deleted: false
+
+  # Raw
+  - name: raw-policy-90-days
+    type: raw
+    description: Remove all raw not updated and downloaded since 3 months
+    timestamp: "7776000"
+    deleted: false
+  - name: raw-policy-30-days
+    type: raw
+    description: Remove all raw not updated and downloaded since 30 days
+    timestamp: "2592000"
+    deleted: false
+  - name: raw-policy-7-days
+    type: raw
+    description: Remove all raw not updated and downloaded since 7 days
+    timestamp: "604800"
+    deleted: false
+  - name: raw-policy-1-days
+    type: raw
+    description: Remove all raw not updated and downloaded since 1 days
+    timestamp: "86400"
+    deleted: false
+
+  # Docker
+  - name: docker-policy-90-days
+    type: docker
+    description: Remove all docker not updated and downloaded since 3 months
+    timestamp: "7776000"
+    deleted: false
+  - name: docker-policy-30-days
+    type: docker
+    description: Remove all docker not updated and downloaded since 30 days
+    timestamp: "2592000"
+    deleted: false
+  - name: docker-policy-7-days
+    type: docker
+    description: Remove all docker not updated and downloaded since 7 days
+    timestamp: "604800"
+    deleted: false
+  - name: docker-policy-1-days
+    type: docker
+    description: Remove all docker not updated and downloaded since 1 days
+    timestamp: "86400"
+    deleted: false
+
+  # APT
+  - name: apt-policy-90-days
+    type: apt
+    description: Remove all apt not updated and downloaded since 3 months
+    timestamp: "7776000"
+    deleted: false
+  - name: apt-policy-30-days
+    type: apt
+    description: Remove all apt not updated and downloaded since 30 days
+    timestamp: "2592000"
+    deleted: false
+  - name: apt-policy-7-days
+    type: apt
+    description: Remove all apt not updated and downloaded since 7 days
+    timestamp: "604800"
+    deleted: false
+  - name: apt-policy-1-days
+    type: apt
+    description: Remove all apt not updated and downloaded since 1 days
+    timestamp: "86400"
+    deleted: false
+
+  # Helm
+  - name: helm-policy-90-days
+    type: helm
+    description: Remove all helm not updated and downloaded since 3 months
+    timestamp: "7776000"
+    deleted: false
+  - name: helm-policy-30-days
+    type: helm
+    description: Remove all helm not updated and downloaded since 30 days
+    timestamp: "2592000"
+    deleted: false
+  - name: helm-policy-7-days
+    type: helm
+    description: Remove all helm not updated and downloaded since 7 days
+    timestamp: "604800"
+    deleted: false
+  - name: helm-policy-1-days
+    type: helm
+    description: Remove all helm not updated and downloaded since 1 days
+    timestamp: "86400"
+    deleted: false
+    
+# Routing rules
+nexus_configuration_routing_rules: []
+
+# Repositories
+nexus_configuration_repositories:
+
+  # Deleted
+  - name: maven-public
+    deleted: true
+  - name: maven-central
+    deleted: true
+  - name: maven-releases
+    deleted: true
+  - name: maven-snapshots
+    deleted: true
+  - name: nuget-group
+    deleted: true
+  - name: nuget-hosted
+    deleted: true
+  - name: nuget.org-proxy
+    deleted: true

@@ -1,1 +1,33 @@
 ---
+# Wait for server to be up
+- name: Wait for server tasks
+  ansible.builtin.include_tasks:
+    file: tasks/wait_for_server.yml
+    apply:
+      tags:
+        - always
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Change default password
+- name: Change default password tasks
+  ansible.builtin.include_tasks:
+    file: tasks/change_default_password.yml
+    apply:
+      tags:
+        - always
+  tags:
+    - always
+  when: not ansible_check_mode
+
+# Blobstore
+- name: Blobstores tasks
+  ansible.builtin.include_tasks:
+    file: tasks/blobstores.yml
+    apply:
+      tags:
+        - blobstores
+  tags:
+    - always
+  when: not ansible_check_mode

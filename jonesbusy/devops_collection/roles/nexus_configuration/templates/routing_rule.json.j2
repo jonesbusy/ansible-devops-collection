@@ -1,0 +1,6 @@
+{
+  "name": "{{ rule.name }}",
+  "description": "{{ rule.description }}",
+  "mode": "{{ rule.mode }}",
+  "matchers": [{{ rule.matchers | map("to_json") | join(", ") }}]
+}

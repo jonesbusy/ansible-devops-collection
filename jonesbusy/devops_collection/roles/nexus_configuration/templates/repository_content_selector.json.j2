@@ -1,0 +1,8 @@
+{
+    "name": "{{ repository_content_selector.name }}",
+    "description": "{{ repository_content_selector.description }}",
+    "actions": [{{ repository_content_selector.actions | map("to_json") | join(", ") }}],
+    "format": "{{ repository_content_selector.format }}",
+    "repository": "{{ repository_content_selector.repository | default("*") }}",
+    "contentSelector": "{{ repository_content_selector.selector }}"
+  }

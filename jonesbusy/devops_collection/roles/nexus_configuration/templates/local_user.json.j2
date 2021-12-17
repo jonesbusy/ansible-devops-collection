@@ -1,0 +1,11 @@
+{
+  "userId": "{{ user.id }}",
+  "firstName": "{{ user.first_name }}",
+  "password": "{{ user.password | default("CHANGE_ME") }}",
+  "lastName": "{{ user.last_name }}",
+  "emailAddress": "{{ user.email }}",
+  "source": "default",
+  "status": "{{ user.status | default("active") }}",
+  "readOnly": {{ user.readOnly | default(false) | lower }},
+  "roles": [{{ user.roles | map("to_json") | join(", ") }}]
+}

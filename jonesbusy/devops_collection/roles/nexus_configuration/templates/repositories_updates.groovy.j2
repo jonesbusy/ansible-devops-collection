@@ -1,0 +1,11 @@
+// Due to NEXUS-26702
+def repo = null
+{% for repository in nexus_repositories %}
+{% if not repository.deleted %}
+if ('{{ repository.kind | default('') }}' == 'hosted' && '{{ repository.type | default('') }}' == 'docker') {
+    repo = repository.repositoryManager.get('{{ repository.name }}')
+    repo.configuration.attributes.storage.latestPolicy = {{ repository.latestPolicy | default(false) | lower }}
+    repository.repositoryManager.update(repo.configuration)
+}
+{% endif %}
+{% endfor %}

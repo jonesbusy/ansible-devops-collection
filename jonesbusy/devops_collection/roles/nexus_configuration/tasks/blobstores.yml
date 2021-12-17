@@ -1,0 +1,69 @@
+---
+- name: Blobstore via REST API
+  block:
+
+    - name: Configure blobstores
+      ansible.builtin.include_tasks: tasks/blobstore.yml
+      loop: "{{ nexus_configuration_blob_stores }}"
+      loop_control:
+        loop_var: blobstore
+
+- name: Blobstore via Groovy
+  block:
+
+    - name: Delete blobstores script if needed
+      uri:
+        method: DELETE
+        body_format: json
+        url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/script/blobstores"
+        status_code: [204, 404]
+        url_username: "{{ nexus_configuration_username }}"
+        url_password: "{{ nexus_configuration_password }}"
+        validate_certs: "{{ nexus_configuration_validate_certs }}"
+        force_basic_auth: yes
+      register: nexus_result_delete
+      changed_when: nexus_result_delete.status == 204
+
+    - name: Upload blobstores script
+      uri:
+        method: POST
+        body_format: json
+        url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/script"
+        body: "{ \"name\" : \"blobstores\", \"type\": \"groovy\", \"content\": \"{{ lookup('template', 'blobstores.groovy.j2') | replace('\n', '\\n') | replace('\"', '\\\"') }}\" }"
+        status_code: [204, 410]
+        url_username: "{{ nexus_configuration_username }}"
+        url_password: "{{ nexus_configuration_password }}"
+        validate_certs: "{{ nexus_configuration_validate_certs }}"
+        force_basic_auth: yes
+      register: nexus_result_upload
+      changed_when: false
+
+    - name: Run blobstores script
+      uri:
+        method: POST
+        url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/script/blobstores/run"
+        status_code: [200]
+        url_username: "{{ nexus_configuration_username }}"
+        url_password: "{{ nexus_configuration_password }}"
+        validate_certs: "{{ nexus_configuration_validate_certs }}"
+        force_basic_auth: yes
+        headers:
+          Content-Type: text/plain
+        return_content: yes
+      register: nexus_result_run
+      when: nexus_result_upload.status != 410
+      changed_when: nexus_result_run.status == 200 and nexus_result_run.json.result == 'true'
+
+    - name: Delete blobstores script
+      uri:
+        method: DELETE
+        body_format: json
+        url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/script/blobstores"
+        status_code: [204]
+        url_username: "{{ nexus_configuration_username }}"
+        url_password: "{{ nexus_configuration_password }}"
+        validate_certs: "{{ nexus_configuration_validate_certs }}"
+        force_basic_auth: yes
+      register: nexus_result_delete
+      when: nexus_result_upload.status != 410
+      changed_when: false

@@ -1,0 +1,33 @@
+{
+  "name": "{{ repository.name }}",
+  "online": {{ repository.online | default(true) | lower }},
+  "storage": {
+    "blobStoreName": "{{ repository.blobstore }}",
+    "strictContentTypeValidation": {{ repository.strict | default(true) | lower }}
+  },
+  "cleanup": {
+    "policyNames": [{{ repository.cleanup_policies | map("to_json") | join(", ") }}]
+  },
+  "proxy": {
+    "remoteUrl": "{{ repository.remote }}",
+    "contentMaxAge": {{ repository.contentMaxAge | default(1440) }},
+    "metadataMaxAge": {{ repository.metadataMaxAge| default(1440) }}
+  },
+  "negativeCache": {
+    "enabled": true,
+    "timeToLive": {{ repository.timeToLive | default(1440) }}
+  },
+  "httpClient": {
+    "blocked": false,
+    "autoBlock": {{ repository.autoBlock | default(true) | lower }},
+    "connection": {
+      "retries": {{ repository.retries | default(3) }},
+      "userAgentSuffix": "",
+      "timeout": {{ repository.timeout | default(30) }},
+      "enableCircularRedirects": false,
+      "enableCookies": false,
+      "useTrustStore": {{ repository.use_truststore | default(false) }}
+    }
+  },
+  "routingRule": "{{ repository.routing | default('') }}"
+}

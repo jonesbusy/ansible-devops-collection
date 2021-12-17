@@ -1,0 +1,85 @@
+import org.sonatype.nexus.cleanup.storage.CleanupPolicyStorage
+import org.sonatype.nexus.cleanup.storage.CleanupPolicyComponent
+
+def isCleanupPolicyExists(String name) {
+    def cleanupPolicyStorage = container.lookup(CleanupPolicyStorage.class.getName())
+    return cleanupPolicyStorage.exists(name)
+}
+
+def deleteCleanupPolicy(String name) {
+    def cleanupPolicyStorage = container.lookup(CleanupPolicyStorage.class.getName())
+    def cleanupPolicyComponent = container.lookup(CleanupPolicyComponent.class.getName())
+    if (cleanupPolicyStorage.exists(name)) {
+        cleanupPolicyStorage.remove(cleanupPolicyStorage.get(name))
+        return true
+    }
+    return false
+}
+
+def createPolicy(String policyName, String description, String format, String lastDownloaded,
+                 String lastBlobUpdated, String regex = null, Boolean isPrerelease = false) {
+    def policyStorage = container.lookup(CleanupPolicyStorage.class.getName())
+    def cleanupPolicy = policyStorage.newCleanupPolicy()
+    cleanupPolicy.setName(policyName)
+    cleanupPolicy.setNotes(description)
+    cleanupPolicy.setMode('delete')
+    cleanupPolicy.setFormat(format)
+    def criteria = [:]
+    if (lastDownloaded) {
+        criteria['lastDownloaded'] = lastDownloaded
+    }
+    if (lastBlobUpdated) {
+        criteria['lastBlobUpdated'] = lastBlobUpdated
+    }
+    if (regex) {
+        criteria['regex'] = regex
+    }
+    if (isPrerelease) {
+        criteria['isPrerelease'] = 'true'
+    }
+    cleanupPolicy.setCriteria(criteria)
+    policyStorage.add(cleanupPolicy)
+}
+
+def updatePolicy(String policyName, String description, String format, String lastDownloaded,
+                 String lastBlobUpdated, String regex = null, Boolean isPrerelease = false) {
+    def policyStorage = container.lookup(CleanupPolicyStorage.class.getName())
+    def cleanupPolicy = policyStorage.get(policyName)
+    cleanupPolicy.setName(policyName)
+    cleanupPolicy.setNotes(description)
+    cleanupPolicy.setMode('delete')
+    cleanupPolicy.setFormat(format)
+    def criteria = [:]
+    if (lastDownloaded) {
+        criteria['lastDownloaded'] = lastDownloaded
+    }
+    if (lastBlobUpdated) {
+        criteria['lastBlobUpdated'] = lastBlobUpdated
+    }
+    if (regex) {
+        criteria['regex'] = regex
+    }
+    if (isPrerelease) {
+        criteria['isPrerelease'] = 'true'
+    }
+    cleanupPolicy.setCriteria(criteria)
+    policyStorage.update(cleanupPolicy)
+}
+
+{% for policy in nexus_cleanup_policies %}
+if (!isCleanupPolicyExists("{{ policy.name }}") && !{{ policy.deleted | default(false) | lower }}) {
+    createPolicy("{{ policy.name }}", "{{ policy.description }}", "{{ policy.type }}", "{{ policy.timestamp | default('') }}", "{{ policy.timestamp | default('') }}", "{{ policy.regex | default('') }}", {{ policy.prerelease | default(false) | lower }})
+}
+else {
+    if ({{ policy.deleted | default(false) | lower }}) {
+        if (isCleanupPolicyExists("{{ policy.name }}")) {
+            deleteCleanupPolicy("{{ policy.name }}")
+        }
+    }
+    else {
+        updatePolicy("{{ policy.name }}", "{{ policy.description }}", "{{ policy.type }}", "{{ policy.timestamp | default('') }}", "{{ policy.timestamp | default('') }}", "{{ policy.regex | default('') }}", {{ policy.prerelease | default(false) | lower }})
+    }
+}
+{% endfor %}
+
+return 'OK'

@@ -1,0 +1,24 @@
+---
+- name: Delete local users
+  ansible.builtin.uri:
+    method: DELETE
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/security/users/{{ user.id }}"
+    status_code: [204, 404]
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  loop: "{{ nexus_local_users }}"
+  loop_control:
+    loop_var: user
+  register: nexus_result
+  when: not ansible_check_mode and user.deleted
+  changed_when: nexus_result.status == 204
+
+# Configure
+- name: Configure users
+  include_tasks: tasks/local_user.yml
+  loop: "{{ nexus_local_users }}"
+  loop_control:
+    loop_var: user
+  when: not ansible_check_mode and not user.deleted

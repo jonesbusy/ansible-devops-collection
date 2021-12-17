@@ -1,7 +1,6 @@
 ---
 # Access
 sonarqube_configuration_sonarqube_url: https://localhost:443/sonarqube
-validate_certs: true
 
 # Environment
 sonarqube_configuration_environment_name: Ansible

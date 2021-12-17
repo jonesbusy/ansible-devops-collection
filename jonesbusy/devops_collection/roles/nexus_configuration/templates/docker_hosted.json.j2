@@ -1,0 +1,22 @@
+{
+  "name": "{{ repository.name }}",
+  "online": {{ repository.online | default(true) | lower }},
+  "storage": {
+    "blobStoreName": "{{ repository.blobstore }}",
+    "strictContentTypeValidation": {{ repository.strict | default(true) | lower }},
+    "writePolicy": "{{ repository.write_policy | default('ALLOW_ONCE') }}"
+  },
+  "cleanup": {
+    "policyNames": [{{ repository.cleanup_policies | map("to_json") | join(", ") }}]
+  },
+  "component": {
+    "proprietaryComponents": true
+  },
+  "docker": {
+    "v1Enabled": {{ repository.indexv1 | default(false) | lower }},
+    "forceBasicAuth": {{ repository.forceBasicAuth | default(true) | lower }}
+    {% if repository.port is defined %}
+    ,"httpPort": "{{ repository.port }}"
+    {% endif %}
+  }
+}

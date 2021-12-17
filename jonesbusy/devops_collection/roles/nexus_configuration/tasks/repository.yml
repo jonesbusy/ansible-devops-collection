@@ -1,0 +1,73 @@
+---
+- name: Ensure blobstore {{ repository.blobstore }} exists
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/blobstores/file/{{ repository.blobstore }}"
+    status_code: [200, 404]
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  register: nexus_result
+  when: not ansible_check_mode
+  failed_when: nexus_result.status == 404
+  tags:
+    - hosted
+    - proxy
+    - group
+
+- name: Retrieve {{ repository.type }} {{ repository.kind }} repository {{ repository.name }}
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/repositories/{{ repository.type }}/{{ repository.kind }}/{{ repository.name }}"
+    status_code: [200, 404]
+    return_content: yes
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  register: nexus_result
+  when: not ansible_check_mode
+  changed_when: false
+  tags:
+    - hosted
+    - proxy
+    - group
+
+- name: Create {{ repository.type }} {{ repository.kind }} repository {{ repository.name }}
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/repositories/{{ repository.type }}/{{ repository.kind }}"
+    status_code: [201]
+    body_format: json
+    body: "{{ lookup('template', '{{ repository.type }}_{{ repository.kind }}.json.j2') }}"
+    return_content: yes
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  when: not ansible_check_mode and nexus_result.status == 404
+  changed_when: true
+  tags:
+    - hosted
+    - proxy
+    - group
+
+- name: Update {{ repository.type }} {{ repository.kind }} repository {{ repository.name }}
+  ansible.builtin.uri:
+    method: PUT
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/repositories/{{ repository.type }}/{{ repository.kind }}/{{ repository.name }}"
+    status_code: [204]
+    body_format: json
+    body: "{{ lookup('template', '{{ repository.type }}_{{ repository.kind }}.json.j2') }}"
+    return_content: yes
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  when: not ansible_check_mode and nexus_result.status == 200
+  changed_when: false
+  tags:
+    - hosted
+    - proxy
+    - group
