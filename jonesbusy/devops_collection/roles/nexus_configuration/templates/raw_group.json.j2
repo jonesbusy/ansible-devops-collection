@@ -1,0 +1,11 @@
+{
+  "name": "{{ repository.name }}",
+  "online": {{ repository.online | default(true) | lower }},
+  "storage": {
+    "blobStoreName": "{{ repository.blobstore }}",
+    "strictContentTypeValidation": {{ repository.strict | default(true) | lower }}
+  },
+  "group": {
+    "memberNames": [{{ repository.members | map("to_json") | join(", ") }}]
+  }
+}

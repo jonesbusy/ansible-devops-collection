@@ -1,0 +1,9 @@
+{
+  "path": "{{ blobstore.path }}",
+  "name": "{{ blobstore.name }}",
+  "softQuota": {
+    "limit": {{ (blobstore.quota | default(500)) * 1000 * 1000 }},
+    "type": "{{ blobstore.quotaType | default('spaceUsedQuota') }}"
+  }
+}
+

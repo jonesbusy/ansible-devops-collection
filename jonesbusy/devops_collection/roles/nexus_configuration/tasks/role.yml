@@ -1,0 +1,44 @@
+---
+- name: Retrieve {{ role.id }} role
+  ansible.builtin.uri:
+    method: GET
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/security/roles/{{ role.id }}"
+    status_code: [200, 404]
+    return_content: yes
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  register: nexus_result
+  when: not ansible_check_mode
+  changed_when: false
+
+- name: Create {{ role.id }} role
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/security/roles"
+    status_code: [200]
+    body_format: json
+    body: "{{ lookup('template', 'role.json.j2') }}"
+    return_content: yes
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  when: not ansible_check_mode and nexus_result.status == 404
+  changed_when: true
+
+- name: Update {{ role.id }} role
+  ansible.builtin.uri:
+    method: PUT
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/security/roles/{{ role.id }}"
+    status_code: [204]
+    body_format: json
+    body: "{{ lookup('template', 'role.json.j2') }}"
+    return_content: yes
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  when: not ansible_check_mode and nexus_result.status == 200
+  changed_when: false

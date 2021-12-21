@@ -1,0 +1,32 @@
+---
+- name: Delete roles
+  ansible.builtin.uri:
+    method: DELETE
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/security/roles/{{ role.id }}"
+    status_code: [204, 404]
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  loop: "{{ nexus_roles }}"
+  loop_control:
+    loop_var: role
+  register: nexus_result
+  when: not ansible_check_mode and role.deleted
+  changed_when: nexus_result.status == 204
+
+# Configure role without other roles to avoid dependencies
+- name: Configure roles without inclusion to other roles
+  include_tasks: tasks/role.yml
+  loop: "{{ nexus_roles }}"
+  loop_control:
+    loop_var: role
+  when: not ansible_check_mode and not role.deleted and (role.roles | length == 0)
+
+# Configure other roles
+- name: Configure other roles
+  include_tasks: tasks/role.yml
+  loop: "{{ nexus_roles }}"
+  loop_control:
+    loop_var: role
+  when: not ansible_check_mode and not role.deleted and (role.roles | length > 0)

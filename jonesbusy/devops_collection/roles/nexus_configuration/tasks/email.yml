@@ -1,0 +1,15 @@
+---
+- name: Update Email server
+  ansible.builtin.uri:
+    method: PUT
+    body_format: json
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/email"
+    body: "{{ lookup('template', 'email.json.j2') }}"
+    status_code: [204]
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  register: nexus_result
+  when: not ansible_check_mode
+  changed_when: nexus_result.status == 204

@@ -1,0 +1,8 @@
+{
+  "id": "{{ role.id }}",
+  "source": "string",
+  "name": "{{ role.name }}",
+  "description": "{{ role.description }}",
+  "privileges": [{{ role.privileges | map("to_json") | join(", ") }}],
+  "roles": [{{ role.roles | map("to_json") | join(", ") }}]
+}

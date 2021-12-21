@@ -1,0 +1,140 @@
+import org.sonatype.nexus.blobstore.api.BlobStoreManager
+import org.sonatype.nexus.blobstore.compact.internal.CompactBlobStoreTaskDescriptor
+import org.sonatype.nexus.scheduling.TaskScheduler
+import org.sonatype.nexus.scheduling.schedule.Cron
+
+def isBlobstoreCompactTaskExists(blobstore) {
+    taskScheduler = (TaskScheduler)container.lookup(TaskScheduler.class.name)
+    return taskScheduler.listsTasks().any {it.name == "Compact blobstore ${blobstore}"}
+}
+
+def isDatabaseBackupTaskExists() {
+    taskScheduler = (TaskScheduler)container.lookup(TaskScheduler.class.name)
+    return taskScheduler.listsTasks().any {it.name == 'Database Backup'}
+}
+
+def createBlobStoreCompactTask(blobstore, cron) {
+    taskScheduler = (TaskScheduler)container.lookup(TaskScheduler.class.name)
+    def taskConfiguration = taskScheduler.createTaskConfigurationInstance(CompactBlobStoreTaskDescriptor.TYPE_ID)
+    taskConfiguration.name = "Compact blobstore ${blobstore}"
+    taskConfiguration.setString(CompactBlobStoreTaskDescriptor.BLOB_STORE_NAME_FIELD_ID, blobstore)
+    taskConfiguration.setString('.alertEmail', '{{ nexus_configuration_tasks_email }}')
+    taskConfiguration.setString('.notificationCondition', '{{ nexus_configuration_tasks_condition}}')
+    taskScheduler.scheduleTask(taskConfiguration, new Cron(new Date().clearTime().next(), cron))
+    return true
+}
+
+def updateCleanupTask(cron) {
+    def changed = false
+    taskScheduler = (TaskScheduler)container.lookup(TaskScheduler.class.name)
+    def taskInfo = taskScheduler.listsTasks().findAll {it.name == 'Cleanup service'}[0]
+    if (taskInfo.configuration.getString('.alertEmail') != '{{ nexus_configuration_tasks_email }}') {
+        changed = true
+        println('Cleanup task for task alert email changed.')
+    }
+    if (taskInfo.configuration.getString('.notificationCondition') != '{{ nexus_configuration_tasks_condition }}') {
+        changed = true
+        println('Cleanup task for task notification condition changed.')
+    }
+    taskInfo.configuration.setString('.alertEmail', '{{ nexus_configuration_tasks_email }}')
+    taskInfo.configuration.setString('.notificationCondition', '{{ nexus_configuration_tasks_condition}}')
+    taskScheduler.scheduleTask(taskInfo.configuration, new Cron(new Date().clearTime().next(), cron))
+    return changed
+}
+
+def createDatabaseBackupTask(cron) {
+    taskScheduler = (TaskScheduler)container.lookup(TaskScheduler.class.name)
+    def taskConfiguration = taskScheduler.createTaskConfigurationInstance('db.backup')
+    taskConfiguration.name = "Database Backup"
+    taskConfiguration.setString('.alertEmail', '{{ nexus_configuration_tasks_email }}')
+    taskConfiguration.setString('.notificationCondition', '{{ nexus_configuration_tasks_condition}}')
+    taskConfiguration.setString('location', '/opt/sonatype/sonatype-work/nexus3/backups')
+    taskScheduler.scheduleTask(taskConfiguration, new Cron(new Date().clearTime().next(), cron))
+    return true
+}
+
+def updateDatabaseBackupTask(cron) {
+    def changed = false
+    taskScheduler = (TaskScheduler)container.lookup(TaskScheduler.class.name)
+    def taskInfo = taskScheduler.listsTasks().findAll {it.name == 'Database Backup'}[0]
+    println(taskInfo.configuration)
+    if (taskInfo.configuration.getString('.alertEmail') != '{{ nexus_configuration_tasks_email }}') {
+        changed = true
+        println('Update database backup task for task alert email changed.')
+    }
+    println(taskInfo.configuration.getString('.notificationCondition'))
+    if (taskInfo.configuration.getString('.notificationCondition') != '{{ nexus_configuration_tasks_condition }}') {
+        changed = true
+        println('Update database backup task for task notification condition changed.')
+    }
+    taskInfo.configuration.setString('.alertEmail', '{{ nexus_configuration_tasks_email }}')
+    taskInfo.configuration.setString('.notificationCondition', '{{ nexus_configuration_tasks_condition}}')
+    taskInfo.configuration.setString('location', '/opt/sonatype/sonatype-work/nexus3/backups')
+    taskScheduler.scheduleTask(taskInfo.configuration, new Cron(new Date().clearTime().next(), cron))
+    return changed
+}
+
+def updateBlobStoreCompactTask(blobstore, cron) {
+    def changed = false
+    taskScheduler = (TaskScheduler)container.lookup(TaskScheduler.class.name)
+    def taskInfo = taskScheduler.listsTasks().findAll {it.name == "Compact blobstore ${blobstore}"}[0]
+    if (taskInfo.configuration.getString('.alertEmail') != '{{ nexus_configuration_tasks_email }}') {
+        changed = true
+        println('Compact task for task alert email changed.')
+    }
+    println(taskInfo.configuration.getString('.notificationCondition'))
+    if (taskInfo.configuration.getString('.notificationCondition') != '{{ nexus_configuration_tasks_condition }}') {
+        changed = true
+        println('Compact task for task notification condition changed.')
+    }
+    taskInfo.configuration.setString('.alertEmail', '{{ nexus_configuration_tasks_email }}')
+    taskInfo.configuration.setString('.notificationCondition', '{{ nexus_configuration_tasks_condition}}')
+    taskScheduler.scheduleTask(taskInfo.configuration, new Cron(new Date().clearTime().next(), cron))
+    return changed
+}
+
+def deleteBlobStoreCompactTask(blobstore) {
+    taskScheduler = (TaskScheduler)container.lookup(TaskScheduler.class.name)
+    def taskInfo = taskScheduler.listsTasks().findAll {it.name == "Compact blobstore ${blobstore}"}[0]
+    taskInfo.remove()
+    return true
+}
+
+def changed = false
+
+{% for blobstore in nexus_configuration_blob_stores %}
+if (!isBlobstoreCompactTaskExists("{{ blobstore.name }}") && !{{ blobstore.deleted | default(false) | lower }}) {
+    createBlobStoreCompactTask("{{ blobstore.name }}", "{{ blobstore.compact_cron }}")
+    changed = true
+}
+else {
+    if ({{ blobstore.deleted | default(false) | lower }}) {
+        if (isBlobstoreCompactTaskExists("{{ blobstore.name }}")) {
+            deleteBlobStoreCompactTask("{{ blobstore.name }}")
+            changed = true
+        }
+    }
+    else {
+        if(updateBlobStoreCompactTask("{{ blobstore.name }}", "{{ blobstore.compact_cron }}")) {
+            changed = true
+        }
+    }
+}
+{% endfor %}
+
+// Update cleanup task cron
+if (updateCleanupTask("{{ nexus_configuration_cleanup_policy_task }}")) {
+    changed = true
+}
+
+if (isDatabaseBackupTaskExists()) {
+    if(updateDatabaseBackupTask("{{ nexus_configuration_backup_metadata_task }}")) {
+        changed = true
+    }
+}
+else {
+    createDatabaseBackupTask("{{ nexus_configuration_backup_metadata_task }}")
+    changed = true
+}
+
+return changed

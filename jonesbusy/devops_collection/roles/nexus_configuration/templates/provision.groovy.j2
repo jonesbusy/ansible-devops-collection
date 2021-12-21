@@ -1,0 +1,43 @@
+import org.sonatype.nexus.capability.CapabilityReference
+import org.sonatype.nexus.capability.CapabilityType
+import org.sonatype.nexus.internal.capability.DefaultCapabilityReference
+import org.sonatype.nexus.internal.capability.DefaultCapabilityRegistry
+import org.sonatype.nexus.security.realm.RealmManager
+import org.sonatype.nexus.rapture.internal.branding.BrandingCapabilityDescriptor
+
+// Some of the Nexus configuration cannot be updated via REST API. Let's use groovy!
+
+core.removeHTTPProxy()
+core.removeHTTPSProxy()
+
+// Disable outreach
+def capabilityRegistry = container.lookup(DefaultCapabilityRegistry.class.name)
+capabilityRegistry.all.findAll {it.context().type().toString().startsWith("Outreach")}.each {
+    capabilityRegistry.disable(it.context().id())
+}
+
+// Branding
+capabilityRegistry.all.findAll {it.context().type().toString().contains("branding")}.each {
+    capabilityRegistry.disable(it.context().id())
+    capabilityRegistry.remove(it.context().id())
+}
+
+def brandingCapabilities = [:]
+brandingCapabilities['footerEnabled'] = "false"
+brandingCapabilities['headerEnabled'] = "true"
+brandingCapabilities['headerHtml'] = "<div style=\\"height:16px;background-color:rgb(255,255,255);font-family: Proxima Nova;text-align:center;font-size:12px;black: white;text-alignment:center\\">Welcome to Nexus '<b>{{ environment_name }}</b>'</div>"
+capabilityRegistry.add(CapabilityType.capabilityType(BrandingCapabilityDescriptor.TYPE_ID), Boolean.TRUE, 'Configured by provision script', brandingCapabilities)
+
+
+// Set base url
+core.baseUrl("{{ nexus_configuration_nexus_url }}")
+
+// Enable realms
+realmManager = container.lookup(RealmManager.class.name)
+realmManager.enableRealm("NpmToken")
+realmManager.enableRealm("DockerToken")
+
+// Enable anonymous access
+security.setAnonymousAccess(true)
+
+return 'OK'

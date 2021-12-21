@@ -1,0 +1,31 @@
+---
+- name: Create {{ repository_content_selector.name }} repository selector
+  ansible.builtin.uri:
+    method: POST
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/security/privileges/repository-content-selector"
+    status_code: [201, 400]
+    body_format: json
+    body: "{{ lookup('template', 'repository_content_selector.json.j2') }}"
+    return_content: yes
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  when: not ansible_check_mode
+  register: nexus_result
+  changed_when: nexus_result.status == 201
+
+- name: Update {{ repository_content_selector.name }} repository selector
+  ansible.builtin.uri:
+    method: PUT
+    url: "{{ nexus_configuration_nexus_url }}/service/rest/v1/security/privileges/repository-content-selector/{{ repository_content_selector.name }}"
+    status_code: [204]
+    body_format: json
+    body: "{{ lookup('template', 'repository_content_selector.json.j2') }}"
+    return_content: yes
+    url_username: "{{ nexus_configuration_username }}"
+    url_password: "{{ nexus_configuration_password }}"
+    validate_certs: "{{ nexus_configuration_validate_certs }}"
+    force_basic_auth: yes
+  when: not ansible_check_mode and not nexus_result.status == 201
+  changed_when: false
