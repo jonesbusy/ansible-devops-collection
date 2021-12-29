@@ -1,0 +1,11 @@
+galaxy_info:
+  author: Valentin Delaye (jonesbusy@gmail.com)
+  description: Deploy EC2 instance on AWS account
+  license: Unlicense
+  min_ansible_version: 2.12
+  galaxy_tags: ["aws"]
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+dependencies: []
